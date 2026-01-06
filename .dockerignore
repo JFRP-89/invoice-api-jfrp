@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.*
+*.md
+Dockerfile
+docker-compose.yml
+.dockerignore
+coverage
+*.log
+*.test.ts
+vitest.config.ts

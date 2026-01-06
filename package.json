@@ -1,0 +1,32 @@
+{
+  "name": "invoices-api",
+  "version": "1.0.0",
+  "description": "Una API diseñada para gestionar facturas",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:ui": "vitest --ui",
+    "db:migrate": "psql -h 127.0.0.1 -p 5434 -U invoices_user -d invoices_db -f scripts/init.sql",
+    "db:migrate:node": "tsx scripts/migrate.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.3",
+    "@types/pg": "^8.16.0",
+    "@types/supertest": "^6.0.3",
+    "@vitest/ui": "^4.0.16",
+    "supertest": "^7.1.4",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "pg": "^8.16.3"
+  }
+}

@@ -1,0 +1,284 @@
+openapi: 3.0.3
+info:
+  title: API de Gestión de Facturas
+  description: API REST para la gestión de facturas con soporte para borradores y facturas definitivas con numeración correlativa.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor de desarrollo
+
+tags:
+  - name: Invoices
+    description: Operaciones sobre facturas
+
+paths:
+  /invoices:
+    get:
+      tags:
+        - Invoices
+      summary: Listar facturas
+      description: Obtiene la lista de todas las facturas, con filtro opcional por estado.
+      parameters:
+        - name: status
+          in: query
+          description: Filtrar por estado de la factura
+          required: false
+          schema:
+            type: string
+            enum:
+              - draft
+              - final
+      responses:
+        '200':
+          description: Lista de facturas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invoice'
+
+    post:
+      tags:
+        - Invoices
+      summary: Crear factura
+      description: Crea una nueva factura en estado borrador.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvoiceRequest'
+      responses:
+        '201':
+          description: Factura creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflicto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /invoices/{id}:
+    get:
+      tags:
+        - Invoices
+      summary: Obtener factura por ID
+      description: Obtiene los detalles de una factura específica.
+      parameters:
+        - $ref: '#/components/parameters/InvoiceId'
+      responses:
+        '200':
+          description: Factura encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '404':
+          description: Factura no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Invoices
+      summary: Eliminar factura
+      description: Elimina una factura. Solo se pueden eliminar facturas en estado borrador.
+      parameters:
+        - $ref: '#/components/parameters/InvoiceId'
+      responses:
+        '204':
+          description: Factura eliminada
+        '400':
+          description: No se puede eliminar una factura en estado final
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Factura no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /invoices/{id}/finalize:
+    patch:
+      tags:
+        - Invoices
+      summary: Finalizar factura
+      description: Cambia el estado de la factura de borrador a definitivo y asigna el siguiente número correlativo.
+      parameters:
+        - $ref: '#/components/parameters/InvoiceId'
+      responses:
+        '200':
+          description: Factura finalizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinalizeInvoiceResponse'
+        '400':
+          description: La factura ya está finalizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Factura no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflicto al asignar número correlativo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  parameters:
+    InvoiceId:
+      name: id
+      in: path
+      description: ID único de la factura
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateInvoiceRequest:
+      type: object
+      required:
+        - clientCif
+        - clientName
+        - clientAddress
+        - baseAmount
+        - vatAmount
+      properties:
+        clientCif:
+          type: string
+          description: CIF del cliente
+          example: B12345678
+        clientName:
+          type: string
+          description: Denominación social del cliente
+          example: Empresa Ejemplo S.L.
+        clientAddress:
+          type: string
+          description: Dirección fiscal del cliente
+          example: Calle Mayor 10, 28001 Madrid
+        baseAmount:
+          type: number
+          format: double
+          description: Importe base imponible
+          example: 100.00
+        vatAmount:
+          type: number
+          format: double
+          description: Importe del IVA
+          example: 21.00
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identificador único de la factura
+        clientCif:
+          type: string
+          description: CIF del cliente
+          example: B12345678
+        clientName:
+          type: string
+          description: Denominación social del cliente
+          example: Empresa Ejemplo S.L.
+        clientAddress:
+          type: string
+          description: Dirección fiscal del cliente
+          example: Calle Mayor 10, 28001 Madrid
+        baseAmount:
+          type: number
+          format: double
+          description: Importe base imponible
+          example: 100.00
+        vatAmount:
+          type: number
+          format: double
+          description: Importe del IVA
+          example: 21.00
+        totalAmount:
+          type: number
+          format: double
+          description: Importe total (base + IVA)
+          example: 121.00
+        invoiceNumber:
+          type: string
+          nullable: true
+          description: Número de factura correlativo (null en borradores)
+          example: BT001
+        status:
+          type: string
+          enum:
+            - draft
+            - final
+          description: Estado de la factura
+          example: draft
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación
+        finalizedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Fecha de finalización (null en borradores)
+
+    FinalizeInvoiceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identificador único de la factura
+        invoiceNumber:
+          type: string
+          description: Número de factura asignado
+          example: BT003
+        status:
+          type: string
+          enum:
+            - final
+          description: Estado de la factura
+          example: final
+        finalizedAt:
+          type: string
+          format: date-time
+          description: Fecha de finalización
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Código de error HTTP
+          example: 400
+        message:
+          type: string
+          description: Descripción del error
+          example: No se puede eliminar una factura en estado final
